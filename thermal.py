@@ -98,27 +98,22 @@ class Plant:
         self.change_value = change_value
 
     def apply_change(self, environment_temp, crisp_output):
-        """
-        Applies temperature change based on control output.
+        # Normalize COG output to a 0 to 1 scale based on maximum temperature considered (here 100°C for example)
+        scale = min(abs(crisp_output) / 100, 1)
+        applied_change = round(self.change_value * scale, 2)
 
-        Args:
-            environment_temp (float): Current environment temperature.
-            crisp_output (float): Output from defuzzification.
-
-        Returns:
-            tuple: Updated environment temperature and action taken.
-        """
-        if crisp_output > 0:
-            environment_temp += self.change_value
+        if abs(crisp_output) < 1e-2 or applied_change < 0.01:  # If output is near zero, stop adjusting
+            action = "no_change"
+        elif crisp_output > 0:
+            environment_temp += applied_change
             action = "heater"
         elif crisp_output < 0:
-            environment_temp -= self.change_value
+            environment_temp -= applied_change
             action = "cooler"
-        else:
-            action = "no_change"
 
         time.sleep(self.skew_rate)
         return round(environment_temp, 2), action
+
 
 
 class ThermalControl:
